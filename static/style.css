@@ -1,0 +1,11 @@
+/* Version marker for cache busting */
+/* Version: 1.0.0 */
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.custom-marker {
+  /* This is just a marker to verify the static file is being served */
+  display: none;
+} 

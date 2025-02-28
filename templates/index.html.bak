@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>X Bot Checker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Version: {{ timestamp }} */
+        :root {
+            --primary-color: #FF9D42; /* SMOK3 orange */
+            --secondary-color: #1E2124; /* Dark background */
+            --background-color: #121416; /* Darker background */
+            --text-color: #FFFFFF;
+            --card-bg: #1E2124;
+            --border-color: #2A2E32;
+            --accent-color: #FF9D42;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+            --highlight-color: #2A2E32;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 157, 66, 0.03) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 157, 66, 0.03) 0%, transparent 20%);
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            opacity: 0.3;
+        }
+        
+        .navbar {
+            background-color: rgba(30, 33, 36, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        
+        .navbar-brand img {
+            height: 40px;
+            margin-right: 10px;
+        }
+        
+        .navbar-brand span {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .container {
+            max-width: 1000px;
+            padding: 2rem 1rem;
+        }
+        
+        .hero-section {
+            text-align: center;
+            padding: 3rem 0 2rem;
+        }
+        
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+        
+        .card {
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-header {
+            background-color: rgba(42, 46, 50, 0.5);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.5rem;
+            color: var(--text-color);
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            color: #000;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.7s ease;
+            z-index: -1;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 157, 66, 0.3);
+            color: #000;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .form-control {
+            background-color: rgba(42, 46, 50, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1.25rem;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            background-color: rgba(42, 46, 50, 0.8);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 0.25rem rgba(255, 157, 66, 0.25);
+            color: var(--text-color);
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .input-group {
+            position: relative;
+        }
+        
+        .input-group .form-control {
+            padding-right: 120px;
+        }
+        
+        .input-group .btn {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            bottom: 5px;
+            z-index: 5;
+        }
+        
+        .score-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 2rem 0;
+        }
+        
+        .score-circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            position: relative;
+            border: 10px solid var(--border-color);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            right: -15px;
+            bottom: -15px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 157, 66, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0.3;
+            }
+        }
+        
+        .score-label {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .explanation {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            border-radius: 10px;
+            background-color: rgba(42, 46, 50, 0.5);
+            border-left: 4px solid var(--accent-color);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 3rem 0;
+        }
+        
+        .loading-animation {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            position: relative;
+        }
+        
+        .loading-animation div {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            animation: loading-animation 1.2s linear infinite;
+        }
+        
+        .loading-animation div:nth-child(1) {
+            top: 8px;
+            left: 8px;
+            animation-delay: 0s;
+        }
+        
+        .loading-animation div:nth-child(2) {
+            top: 8px;
+            left: 32px;
+            animation-delay: -0.4s;
+        }
+        
+        .loading-animation div:nth-child(3) {
+            top: 8px;
+            left: 56px;
+            animation-delay: -0.8s;
+        }
+        
+        .loading-animation div:nth-child(4) {
+            top: 32px;
+            left: 8px;
+            animation-delay: -0.4s;
+        }
+        
+        .loading-animation div:nth-child(5) {
+            top: 32px;
+            left: 32px;
+            animation-delay: -0.8s;
+        }
+        
+        .loading-animation div:nth-child(6) {
+            top: 32px;
+            left: 56px;
+            animation-delay: -1.2s;
+        }
+        
+        .loading-animation div:nth-child(7) {
+            top: 56px;
+            left: 8px;
+            animation-delay: -0.8s;
+        }
+        
+        .loading-animation div:nth-child(8) {
+            top: 56px;
+            left: 32px;
+            animation-delay: -1.2s;
+        }
+        
+        .loading-animation div:nth-child(9) {
+            top: 56px;
+            left: 56px;
+            animation-delay: -1.6s;
+        }
+        
+        @keyframes loading-animation {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        .loading-text {
+            font-size: 1.2rem;
+            color: var(--accent-color);
+            font-weight: 500;
+        }
+        
+        .result-container {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .tweet-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 1.5rem;
+            background-color: rgba(42, 46, 50, 0.5);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .tweet-info img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-right: 1.5rem;
+            border: 2px solid var(--accent-color);
+        }
+        
+        .tweet-info-text {
+            flex: 1;
+        }
+        
+        .tweet-info-text h5 {
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+        
+        .tweet-info-text p {
+            margin-bottom: 0;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .metric {
+            text-align: center;
+            padding: 1rem;
+            background-color: rgba(42, 46, 50, 0.5);
+            border-radius: 8px;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        
+        .metric:hover {
+            transform: translateY(-5px);
+            background-color: rgba(42, 46, 50, 0.8);
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Score colors */
+        .score-low {
+            color: var(--success-color);
+            border-color: var(--success-color);
+        }
+        
+        .score-medium {
+            color: var(--warning-color);
+            border-color: var(--warning-color);
+        }
+        
+        .score-high {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .footer a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .tweet-info {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .tweet-info img {
+                margin-right: 0;
+                margin-bottom: 1rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+            
+            .metrics {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Animated background elements */
+        .bg-element {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 157, 66, 0.1) 0%, transparent 70%);
+            z-index: -1;
+        }
+        
+        .bg-element-1 {
+            width: 300px;
+            height: 300px;
+            top: -150px;
+            right: -150px;
+            animation: float 15s infinite alternate ease-in-out;
+        }
+        
+        .bg-element-2 {
+            width: 200px;
+            height: 200px;
+            bottom: 20%;
+            left: -100px;
+            animation: float 12s infinite alternate-reverse ease-in-out;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(30px, 30px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background elements -->
+    <div class="bg-element bg-element-1"></div>
+    <div class="bg-element bg-element-2"></div>
+    
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <span>X Bot Checker</span>
+            </a>
+            <div>
+                <a href="https://smok3.io" target="_blank" class="btn btn-primary btn-sm">
+                    Visit SMOK3.io
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="hero-section">
+            <h1 class="hero-title">X Bot Checker</h1>
+            <p class="hero-subtitle">Analyze Twitter/X posts to detect potential bot activity and engagement manipulation.</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Analyze a Tweet</h5>
+            </div>
+            <div class="card-body">
+                <form id="analyzeForm">
+                    <div class="mb-3">
+                        <label for="tweetUrl" class="form-label">Tweet URL or ID</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="tweetUrl" placeholder="https://x.com/username/status/1234567890 or just the ID" required>
+                            <button type="submit" class="btn btn-primary">Analyze</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="loading">
+            <div class="loading-animation">
+                <div></div><div></div><div></div>
+                <div></div><div></div><div></div>
+                <div></div><div></div><div></div>
+            </div>
+            <p class="loading-text">Analyzing tweet data...</p>
+        </div>
+        
+        <div class="result-container">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Analysis Results</h5>
+                </div>
+                <div class="card-body">
+                    <div class="tweet-info">
+                        <img id="userAvatar" src="https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png" alt="User Avatar">
+                        <div class="tweet-info-text">
+                            <h5 id="userName">User Name</h5>
+                            <p id="userHandle">@username</p>
+                            <p id="tweetText" class="mt-2">Tweet text will appear here...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="score-container">
+                        <div id="scoreCircle" class="score-circle">
+                            <span id="scoreValue">0</span>
+                        </div>
+                        <div class="score-label">Bot Score</div>
+                        <p class="text-center text-muted">Higher score indicates higher likelihood of bot activity</p>
+                    </div>
+                    
+                    <div class="metrics">
+                        <div class="metric">
+                            <div id="retweetCount" class="metric-value">0</div>
+                            <div class="metric-label">Retweets</div>
+                        </div>
+                        <div class="metric">
+                            <div id="likeCount" class="metric-value">0</div>
+                            <div class="metric-label">Likes</div>
+                        </div>
+                        <div class="metric">
+                            <div id="replyCount" class="metric-value">0</div>
+                            <div class="metric-label">Replies</div>
+                        </div>
+                        <div class="metric">
+                            <div id="viewCount" class="metric-value">0</div>
+                            <div class="metric-label">Views</div>
+                        </div>
+                    </div>
+                    
+                    <div class="explanation">
+                        <h6>Analysis Explanation:</h6>
+                        <p id="explanation">The explanation will appear here...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="footer">
+        <div class="container">
+            <p>© 2025 X Bot Checker | Version: {{ timestamp }}</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const analyzeForm = document.getElementById('analyzeForm');
+            const tweetUrlInput = document.getElementById('tweetUrl');
+            const loadingDiv = document.querySelector('.loading');
+            const resultContainer = document.querySelector('.result-container');
+            
+            // Score elements
+            const scoreCircle = document.getElementById('scoreCircle');
+            const scoreValue = document.getElementById('scoreValue');
+            
+            // Tweet info elements
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+            const userHandle = document.getElementById('userHandle');
+            const tweetText = document.getElementById('tweetText');
+            
+            // Metrics elements
+            const retweetCount = document.getElementById('retweetCount');
+            const likeCount = document.getElementById('likeCount');
+            const replyCount = document.getElementById('replyCount');
+            const viewCount = document.getElementById('viewCount');
+            
+            // Explanation element
+            const explanation = document.getElementById('explanation');
+            
+            // Extract tweet ID from URL
+            function extractTweetId(input) {
+                // If it's just a numeric ID, return it
+                if (/^\d+$/.test(input)) {
+                    return input;
+                }
+                
+                // Try to extract ID from URL
+                const match = input.match(/\/status\/(\d+)/);
+                return match ? match[1] : input;
+            }
+            
+            // Format numbers with commas
+            function formatNumber(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+            
+            // Set score color based on value
+            function setScoreColor(score) {
+                scoreCircle.classList.remove('score-low', 'score-medium', 'score-high');
+                
+                if (score <= 33) {
+                    scoreCircle.classList.add('score-low');
+                } else if (score <= 66) {
+                    scoreCircle.classList.add('score-medium');
+                } else {
+                    scoreCircle.classList.add('score-high');
+                }
+            }
+            
+            // Animate counting up
+            function animateCount(element, target, duration = 1000) {
+                const start = 0;
+                const increment = 20;
+                const steps = duration / increment;
+                const stepValue = (target - start) / steps;
+                let current = start;
+                let step = 0;
+                
+                const timer = setInterval(() => {
+                    step++;
+                    current += stepValue;
+                    
+                    if (step >= steps) {
+                        clearInterval(timer);
+                        current = target;
+                    }
+                    
+                    element.textContent = Math.floor(current);
+                }, increment);
+            }
+            
+            // Handle form submission
+            analyzeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const tweetUrl = tweetUrlInput.value.trim();
+                if (!tweetUrl) return;
+                
+                const tweetId = extractTweetId(tweetUrl);
+                
+                // Show loading, hide results
+                loadingDiv.style.display = 'block';
+                resultContainer.style.display = 'none';
+                
+                // Make API request
+                fetch(`/?id=${tweetId}&analyze=true`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide loading
+                        loadingDiv.style.display = 'none';
+                        
+                        if (data.error) {
+                            alert(`Error: ${data.error}`);
+                            return;
+                        }
+                        
+                        // Update score
+                        const score = data.score || 0;
+                        setScoreColor(score);
+                        animateCount(scoreValue, score);
+                        
+                        // Update metrics
+                        retweetCount.textContent = formatNumber(data.retweet_count || 0);
+                        likeCount.textContent = formatNumber(data.favorite_count || 0);
+                        replyCount.textContent = formatNumber(data.reply_count || 0);
+                        viewCount.textContent = formatNumber(data.view_count || 0);
+                        
+                        // Update explanation
+                        explanation.textContent = data.explanation || 'No explanation available.';
+                        
+                        // Update tweet info if available
+                        if (data.user_info) {
+                            userName.textContent = data.user_info.name || 'Unknown';
+                            userHandle.textContent = `@${data.user_info.screen_name || 'unknown'}`;
+                            
+                            if (data.user_info.profile_image_url) {
+                                userAvatar.src = data.user_info.profile_image_url;
+                            }
+                        }
+                        
+                        tweetText.textContent = data.text || 'Tweet text not available';
+                        
+                        // Show results
+                        resultContainer.style.display = 'block';
+                    })
+                    .catch(error => {
+                        loadingDiv.style.display = 'none';
+                        alert(`Error: ${error.message}`);
+                    });
+            });
+            
+            // Check for URL parameter to auto-analyze
+            const urlParams = new URLSearchParams(window.location.search);
+            const autoAnalyzeId = urlParams.get('id');
+            
+            if (autoAnalyzeId) {
+                tweetUrlInput.value = autoAnalyzeId;
+                analyzeForm.dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html> 
