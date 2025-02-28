@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>SMOK3 Bot Detector</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #FF9D42;
+            --secondary-color: #FFC107;
+            --dark-bg: #121212;
+            --card-bg: #1E1E1E;
+            --text-color: #FFFFFF;
+            --text-muted: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .navbar {
+            background-color: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-brand span {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero {
+            padding: 4rem 0;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(30, 30, 30, 0.8), rgba(18, 18, 18, 0.9));
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+        
+        .form-container {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 3rem;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .form-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(255, 157, 66, 0.25);
+            color: var(--text-color);
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            padding: 0.8rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 157, 66, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 157, 66, 0.4);
+            background: linear-gradient(90deg, #FFA857, #FFD54F);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+        }
+        
+        .card-header h5 {
+            margin: 0;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        .score-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 8px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            position: relative;
+            background: conic-gradient(var(--primary-color) 0%, transparent 0%);
+            transition: all 0.5s ease;
+        }
+        
+        /* Percentage indicator for bot likelihood */
+        .percentage-indicator {
+            font-size: 1rem;
+            position: absolute;
+            top: 50%;
+            right: 30px;
+            transform: translateY(-50%);
+        }
+        
+        .score-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .metrics {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        
+        .metric {
+            text-align: center;
+            padding: 1rem;
+            flex: 1;
+            min-width: 100px;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+        
+        .metric:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            transform: translateY(-5px);
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Score colors */
+        .score-low {
+            color: var(--success-color);
+            border-color: var(--success-color);
+        }
+        
+        .score-medium {
+            color: var(--warning-color);
+            border-color: var(--warning-color);
+        }
+        
+        .score-high {
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
+        .explanation {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .explanation h6 {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+        
+        .explanation p {
+            color: var(--text-muted);
+            margin-bottom: 0;
+            line-height: 1.6;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner-border {
+            color: var(--primary-color);
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        footer {
+            background-color: rgba(18, 18, 18, 0.8);
+            padding: 2rem 0;
+            text-align: center;
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        footer p {
+            color: var(--text-muted);
+            margin-bottom: 0;
+        }
+        
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        footer a:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+        
+        .engagement-chart-container {
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border-radius: 8px;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        .engagement-chart-title {
+            text-align: center;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/"><span>SMOK3 BOT DETECTOR</span> </a>
+            <div class="d-flex">
+                <a href="https://smok3.io" target="_blank" class="btn btn-primary btn-sm">Visit SMOK3.io </a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Twitter Bot Detection Tool</h1>
+            <p>Analyze Twitter accounts and tweets to determine if they're likely to be bots. Our advanced algorithm checks engagement patterns, account behavior, and other metrics to provide a comprehensive analysis.</p>
+        </div>
+    </section>
+
+    <section class="main-content py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="form-container">
+                        <form id="analyzeForm">
+                            <div class="mb-4">
+                                <label for="tweetUrl" class="form-label">Enter Tweet URL or ID</label>
+                                <input type="text" class="form-control" id="tweetUrl" placeholder="https://x.com/username/status/1234567890 or just the ID" required>
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary">Analyze Tweet</button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="loading" id="loadingIndicator">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Analyzing tweet data...</p>
+                    </div>
+                    
+                    <div class="result-container">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Analysis Results</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="score-container">
+                                    <div id="scoreCircle" class="score-circle">
+                                        <span id="scoreValue">0</span>
+                                        <div class="percentage-indicator">%</div>
+                                    </div>
+                                    <div class="score-label">Bot Likelihood</div>
+                                    <p class="text-center text-muted">Higher percentage indicates higher likelihood of bot activity</p>
+                                </div>
+                                
+                                <div class="metrics">
+                                    <div class="metric">
+                                        <div id="retweetCount" class="metric-value">0</div>
+                                        <div class="metric-label">Retweets</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div id="likeCount" class="metric-value">0</div>
+                                        <div class="metric-label">Likes</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div id="replyCount" class="metric-value">0</div>
+                                        <div class="metric-label">Replies</div>
+                                    </div>
+                                    <div class="metric">
+                                        <div id="viewCount" class="metric-value">0</div>
+                                        <div class="metric-label">Views</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="engagement-chart-container">
+                                    <h6 class="engagement-chart-title">Engagement Comparison</h6>
+                                    <canvas id="engagementChart"></canvas>
+                                </div>
+                                
+                                <div class="explanation">
+                                    <h6>Analysis Explanation</h6>
+                                    <p id="explanationText">Enter a tweet URL or ID above to analyze it for potential bot activity.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>© 2025 <a href="https://smok3.io" target="_blank">SMOK3</a>. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+        
+        function setScoreColor(score) {
+            const scoreCircle = document.getElementById('scoreCircle');
+            scoreCircle.classList.remove('score-low', 'score-medium', 'score-high');
+            
+            // Update the conic gradient to represent the percentage
+            scoreCircle.style.background = `conic-gradient(
+                ${score <= 33 ? 'var(--success-color)' : score <= 66 ? 'var(--warning-color)' : 'var(--danger-color)'}
+                ${score}%, 
+                transparent ${score}%
+            )`;
+            
+            if (score <= 33) {
+                scoreCircle.classList.add('score-low');
+            } else if (score <= 66) {
+                scoreCircle.classList.add('score-medium');
+            } else {
+                scoreCircle.classList.add('score-high');
+            }
+        }
+        
+        function animateCount(element, target, duration) {
+            const start = parseInt(element.textContent);
+            const increment = (target - start) / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= target) || (increment < 0 && current <= target)) {
+                    clearInterval(timer);
+                    element.textContent = target;
+                } else {
+                    element.textContent = Math.round(current);
+                }
+            }, 16);
+        }
+        
+        let engagementChart = null;
+        
+        function createEngagementChart(currentData, avgData) {
+            const ctx = document.getElementById('engagementChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (engagementChart) {
+                engagementChart.destroy();
+            }
+            
+            engagementChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Retweets', 'Likes', 'Replies', 'Views'],
+                    datasets: [
+                        {
+                            label: 'Current Tweet',
+                            data: currentData,
+                            backgroundColor: 'rgba(255, 157, 66, 0.7)',
+                            borderColor: 'rgba(255, 157, 66, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'User Average',
+                            data: avgData,
+                            backgroundColor: 'rgba(66, 133, 244, 0.7)',
+                            borderColor: 'rgba(66, 133, 244, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutQuart'
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.7)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        document.getElementById('analyzeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const tweetUrl = document.getElementById('tweetUrl').value;
+            let tweetId = tweetUrl;
+            
+            // Extract tweet ID if a full URL is provided
+            if (tweetUrl.includes('/')) {
+                const parts = tweetUrl.split('/');
+                tweetId = parts[parts.length - 1].split('?')[0];
+            }
+            
+            // Show loading indicator
+            document.getElementById('loadingIndicator').style.display = 'block';
+            
+            // Make API request
+            fetch(`/?id=${tweetId}&analyze=true`)
+                .then(response => response.json())
+                .then(data => {
+                    // Hide loading indicator
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    
+                    if (data.error) {
+                        document.getElementById('explanationText').textContent = `Error: ${data.error}`;
+                        return;
+                    }
+                    
+                    // Update score
+                    const scoreValue = document.getElementById('scoreValue');
+                    animateCount(scoreValue, data.score, 1000);
+                    setScoreColor(data.score);
+                    
+                    // Update metrics
+                    const retweetCount = document.getElementById('retweetCount');
+                    const likeCount = document.getElementById('likeCount');
+                    const replyCount = document.getElementById('replyCount');
+                    const viewCount = document.getElementById('viewCount');
+                    
+                    animateCount(retweetCount, data.retweet_count, 1000);
+                    animateCount(likeCount, data.favorite_count, 1000);
+                    animateCount(replyCount, data.reply_count, 1000);
+                    animateCount(viewCount, data.view_count, 1000);
+                    
+                    // Update explanation
+                    document.getElementById('explanationText').textContent = data.explanation;
+                    
+                    // Create engagement comparison chart if data is available
+                    if (data.engagement_comparison && data.engagement_comparison.avg_engagement) {
+                        const avgEngagement = data.engagement_comparison.avg_engagement;
+                        
+                        const currentData = [
+                            data.retweet_count,
+                            data.favorite_count,
+                            data.reply_count,
+                            data.view_count
+                        ];
+                        
+                        const avgData = [
+                            avgEngagement.avg_retweets,
+                            avgEngagement.avg_likes,
+                            avgEngagement.avg_replies,
+                            avgEngagement.avg_views
+                        ];
+                        
+                        createEngagementChart(currentData, avgData);
+                        document.querySelector('.engagement-chart-container').style.display = 'block';
+                    } else {
+                        document.querySelector('.engagement-chart-container').style.display = 'none';
+                    }
+                    
+                    // Show results
+                    document.querySelector('.result-container').style.display = 'block';
+                })
+                .catch(error => {
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    document.getElementById('explanationText').textContent = `Error: ${error.message}`;
+                });
+        });
+    </script>
+</body>
+</html> 

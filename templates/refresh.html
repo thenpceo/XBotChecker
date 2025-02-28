@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Refreshing Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121416;
+            color: #FFFFFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255, 157, 66, 0.2);
+            border-radius: 50%;
+            border-top-color: #FF9D42;
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .message {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="spinner"></div>
+    <div class="message">Clearing cache and refreshing...</div>
+    <div class="message">Timestamp: {{ timestamp }}</div>
+    
+    <script>
+        // Clear browser cache
+        function clearCache() {
+            // Clear localStorage
+            localStorage.clear();
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            
+            // Clear cookies
+            document.cookie.split(";").forEach(function(c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            
+            // Force reload from server
+            window.location.href = "/?t={{ timestamp }}";
+        }
+        
+        // Wait a moment then clear cache and redirect
+        setTimeout(clearCache, 1500);
+    </script>
+</body>
+</html> 

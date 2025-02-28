@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        input {
+            padding: 10px;
+            width: 300px;
+            margin-right: 10px;
+        }
+        .container {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>API Test</h1>
+    
+    <div class="container">
+        <h2>Test Mock Endpoint</h2>
+        <button id="testMock">Test Mock Data</button>
+        <pre id="mockResult">Results will appear here...</pre>
+    </div>
+    
+    <div class="container">
+        <h2>Test Real Tweet</h2>
+        <input type="text" id="tweetId" placeholder="Enter tweet ID" value="1878005965489906077">
+        <button id="testReal">Test Real Tweet</button>
+        <pre id="realResult">Results will appear here...</pre>
+    </div>
+    
+    <script>
+        document.getElementById('testMock').addEventListener('click', function() {
+            const resultElement = document.getElementById('mockResult');
+            resultElement.textContent = 'Loading...';
+            
+            fetch('http://localhost:5000/?id=mock&analyze=true')
+                .then(response => response.json())
+                .then(data => {
+                    resultElement.textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    resultElement.textContent = 'Error: ' + error.message;
+                });
+        });
+        
+        document.getElementById('testReal').addEventListener('click', function() {
+            const tweetId = document.getElementById('tweetId').value.trim();
+            if (!tweetId) {
+                alert('Please enter a tweet ID');
+                return;
+            }
+            
+            const resultElement = document.getElementById('realResult');
+            resultElement.textContent = 'Loading...';
+            
+            fetch(`http://localhost:5000/?id=${tweetId}&analyze=true`)
+                .then(response => response.json())
+                .then(data => {
+                    resultElement.textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    resultElement.textContent = 'Error: ' + error.message;
+                });
+        });
+    </script>
+</body>
+</html> 

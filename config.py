@@ -5,9 +5,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 CONFIG = {
+  'OPENAI_API_KEY': os.getenv("OPENAI_API_KEY"),
   'ANTHROPIC_API_KEY': os.getenv("ANTHROPIC_API_KEY"),
-  'DEBUG': os.getenv("DEBUG", False),
-  'PORT': int(os.getenv("PORT", 8080)),
+  'DEBUG': True,
+  'PORT': int(os.getenv("PORT", 5000)),
   'BLOCK_RESOURCE_TYPES': [
     'beacon',
     'csp_report',

@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>SMOK3 Bot Detector</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css?v={{ timestamp }}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css?v={{ timestamp }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js?v={{ timestamp }}"></script>
+    <style>
+        /* Version: {{ timestamp }} */
+        :root {
+            --primary-color: #FF9D42; /* SMOK3 orange */
+            --secondary-color: #1E2124; /* Dark background */
+            --background-color: #121416; /* Darker background */
+            --text-color: #FFFFFF;
+            --card-bg: #1E2124;
+            --border-color: #2A2E32;
+            --accent-color: #FF9D42;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+            --danger-color: #F44336;
+            --highlight-color: #2A2E32;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(255, 157, 66, 0.03) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 157, 66, 0.03) 0%, transparent 20%);
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            opacity: 0.3;
+        }
+        
+        .navbar {
+            background-color: rgba(30, 33, 36, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 0;
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        
+        .navbar-brand img {
+            height: 40px;
+            margin-right: 10px;
+        }
+        
+        .navbar-brand span {
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .container {
+            max-width: 1000px;
+            padding: 2rem 1rem;
+        }
+        
+        .hero-section {
+            text-align: center;
+            padding: 3rem 0 2rem;
+        }
+        
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 700px;
+            margin: 0 auto 2rem;
+        }
+        
+        .form-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .form-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .form-control {
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.8rem 1rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(255, 157, 66, 0.2);
+            color: var(--text-color);
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            border: none;
+            padding: 0.8rem 2rem;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            color: #000;
+            box-shadow: 0 4px 12px rgba(255, 157, 66, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 157, 66, 0.4);
+            background: linear-gradient(90deg, #FFC107, #FF9D42);
+            color: #000;
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 157, 66, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--accent-color);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .result-container {
+            display: none;
+            margin-top: 2rem;
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-header {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.2rem 1.5rem;
+        }
+        
+        .card-header h5 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.3rem;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        .score-container {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 5px solid var(--border-color);
+            position: relative;
+            transition: all 0.5s ease;
+        }
+        
+        .score-circle::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            background: conic-gradient(var(--accent-color) 0%, transparent 0%);
+            transition: all 1s ease;
+            z-index: -1;
+        }
+        
+        .score-circle span {
+            font-size: 3rem;
+            font-weight: 700;
+        }
+        
+        .score-circle.score-low {
+            border-color: var(--success-color);
+        }
+        
+        .score-circle.score-medium {
+            border-color: var(--warning-color);
+        }
+        
+        .score-circle.score-high {
+            border-color: var(--danger-color);
+        }
+        
+        .score-label {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .metrics {
+            display: flex;
+            justify-content: space-between;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .metric {
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+            padding: 1rem;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            margin: 0.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .metric:hover {
+            transform: translateY(-3px);
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .explanation {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .explanation h6 {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        
+        .explanation p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+        
+        .footer {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem 0;
+            margin-top: 3rem;
+            text-align: center;
+        }
+        
+        .footer p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .footer a {
+            color: var(--accent-color);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .footer a:hover {
+            color: #FFC107;
+            text-decoration: underline;
+        }
+        
+        /* Engagement comparison chart */
+        .engagement-chart-container {
+            margin: 2rem 0;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .engagement-chart-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        /* Percentage indicator for bot likelihood */
+        .percentage-indicator {
+            position: absolute;
+            bottom: -25px;
+            right: -25px;
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            color: #000;
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <span>SMOK3 Bot Detector</span>
+            </a>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="hero-section">
+            <h1 class="hero-title">Bot Detector</h1>
+            <p class="hero-subtitle">Analyze Twitter/X posts to detect potential bot activity. Enter a tweet URL or ID below to get started.</p>
+        </div>
+        
+        <div class="form-container">
+            <h2 class="form-title">Analyze a Tweet</h2>
+            <form id="analyzeForm">
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" id="tweetUrl" placeholder="Enter tweet URL or ID" required>
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fas fa-search me-2"></i>Analyze
+                    </button>
+                </div>
+                <div class="form-text text-muted">
+                    Example: https://twitter.com/username/status/1234567890 or just 1234567890
+                </div>
+            </form>
+        </div>
+        
+        <div class="loading">
+            <div class="spinner"></div>
+            <p class="loading-text">Analyzing tweet data...</p>
+        </div>
+        
+        <div class="result-container">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Analysis Results</h5>
+                </div>
+                <div class="card-body">
+                    <div class="score-container">
+                        <div id="scoreCircle" class="score-circle">
+                            <span id="scoreValue">0</span>
+                            <div class="percentage-indicator">%</div>
+                        </div>
+                        <div class="score-label">Bot Likelihood</div>
+                        <p class="text-center text-muted">Higher percentage indicates higher likelihood of bot activity</p>
+                    </div>
+                    
+                    <div class="metrics">
+                        <div class="metric">
+                            <div id="retweetCount" class="metric-value">0</div>
+                            <div class="metric-label">Retweets</div>
+                        </div>
+                        <div class="metric">
+                            <div id="likeCount" class="metric-value">0</div>
+                            <div class="metric-label">Likes</div>
+                        </div>
+                        <div class="metric">
+                            <div id="replyCount" class="metric-value">0</div>
+                            <div class="metric-label">Replies</div>
+                        </div>
+                        <div class="metric">
+                            <div id="viewCount" class="metric-value">0</div>
+                            <div class="metric-label">Views</div>
+                        </div>
+                    </div>
+                    
+                    <div class="engagement-chart-container">
+                        <h6 class="engagement-chart-title">Engagement Comparison</h6>
+                        <div class="chart-container">
+                            <canvas id="engagementChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="explanation">
+                        <h6>Analysis Explanation:</h6>
+                        <p id="explanation">The explanation will appear here...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="footer">
+        <div class="container">
+            <p>© 2025 SMOK3 Bot Detector | Powered by <a href="https://smok3.io" target="_blank">SMOK3</a></p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const analyzeForm = document.getElementById('analyzeForm');
+            const tweetUrlInput = document.getElementById('tweetUrl');
+            const loadingDiv = document.querySelector('.loading');
+            const resultContainer = document.querySelector('.result-container');
+            
+            // Score elements
+            const scoreCircle = document.getElementById('scoreCircle');
+            const scoreValue = document.getElementById('scoreValue');
+            
+            // Metrics elements
+            const retweetCount = document.getElementById('retweetCount');
+            const likeCount = document.getElementById('likeCount');
+            const replyCount = document.getElementById('replyCount');
+            const viewCount = document.getElementById('viewCount');
+            
+            // Explanation element
+            const explanation = document.getElementById('explanation');
+            
+            // Chart
+            let engagementChart = null;
+            
+            // Extract tweet ID from URL
+            function extractTweetId(input) {
+                // If it's just a numeric ID, return it
+                if (/^\d+$/.test(input)) {
+                    return input;
+                }
+                
+                // Try to extract ID from URL
+                const match = input.match(/\/status\/(\d+)/);
+                return match ? match[1] : input;
+            }
+            
+            // Format numbers with commas
+            function formatNumber(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+            
+            // Set score color based on value
+            function setScoreColor(score) {
+                scoreCircle.classList.remove('score-low', 'score-medium', 'score-high');
+                
+                if (score <= 33) {
+                    scoreCircle.classList.add('score-low');
+                } else if (score <= 66) {
+                    scoreCircle.classList.add('score-medium');
+                } else {
+                    scoreCircle.classList.add('score-high');
+                }
+                
+                // Animate the conic gradient for the circle
+                const percentage = score;
+                scoreCircle.style.background = `conic-gradient(
+                    ${score <= 33 ? 'var(--success-color)' : score <= 66 ? 'var(--warning-color)' : 'var(--danger-color)'} 
+                    ${percentage}%, 
+                    rgba(0, 0, 0, 0.2) 0%
+                )`;
+            }
+            
+            // Animate counting up
+            function animateCount(element, target, duration = 1000) {
+                const start = 0;
+                const increment = 20;
+                const steps = duration / increment;
+                const stepValue = (target - start) / steps;
+                let current = start;
+                let step = 0;
+                
+                const timer = setInterval(() => {
+                    step++;
+                    current += stepValue;
+                    
+                    if (step >= steps) {
+                        clearInterval(timer);
+                        current = target;
+                    }
+                    
+                    element.textContent = Math.floor(current);
+                }, increment);
+            }
+            
+            // Create engagement comparison chart
+            function createEngagementChart(data) {
+                const ctx = document.getElementById('engagementChart').getContext('2d');
+                
+                if (engagementChart) {
+                    engagementChart.destroy();
+                }
+                
+                const engagementComparison = data.engagement_comparison || {};
+                const avgEngagement = engagementComparison.avg_engagement || {};
+                
+                const labels = ['Retweets', 'Likes', 'Replies', 'Views'];
+                const currentData = [
+                    data.retweet_count || 0,
+                    data.favorite_count || 0,
+                    data.reply_count || 0,
+                    data.view_count || 0
+                ];
+                const averageData = [
+                    avgEngagement.avg_retweets || 0,
+                    avgEngagement.avg_likes || 0,
+                    avgEngagement.avg_replies || 0,
+                    avgEngagement.avg_views || 0
+                ];
+                
+                engagementChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Current Tweet',
+                                data: currentData,
+                                backgroundColor: 'rgba(255, 157, 66, 0.7)',
+                                borderColor: 'rgba(255, 157, 66, 1)',
+                                borderWidth: 1,
+                                borderRadius: 6,
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8
+                            },
+                            {
+                                label: 'User Average',
+                                data: averageData,
+                                backgroundColor: 'rgba(66, 135, 245, 0.7)',
+                                borderColor: 'rgba(66, 135, 245, 1)',
+                                borderWidth: 1,
+                                borderRadius: 6,
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 1500,
+                            easing: 'easeOutQuart'
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    font: {
+                                        family: "'Inter', sans-serif"
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleFont: {
+                                    family: "'Inter', sans-serif",
+                                    size: 14
+                                },
+                                bodyFont: {
+                                    family: "'Inter', sans-serif",
+                                    size: 13
+                                },
+                                padding: 12,
+                                cornerRadius: 8,
+                                caretSize: 6
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Handle form submission
+            analyzeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const tweetUrl = tweetUrlInput.value.trim();
+                if (!tweetUrl) return;
+                
+                const tweetId = extractTweetId(tweetUrl);
+                
+                // Show loading, hide results
+                loadingDiv.style.display = 'block';
+                resultContainer.style.display = 'none';
+                
+                // Make API request
+                fetch(`/?id=${tweetId}&analyze=true`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide loading
+                        loadingDiv.style.display = 'none';
+                        
+                        if (data.error) {
+                            alert(`Error: ${data.error}`);
+                            return;
+                        }
+                        
+                        // Update score
+                        const score = data.score || 0;
+                        setScoreColor(score);
+                        animateCount(scoreValue, score);
+                        
+                        // Update metrics
+                        retweetCount.textContent = formatNumber(data.retweet_count || 0);
+                        likeCount.textContent = formatNumber(data.favorite_count || 0);
+                        replyCount.textContent = formatNumber(data.reply_count || 0);
+                        viewCount.textContent = formatNumber(data.view_count || 0);
+                        
+                        // Update explanation
+                        explanation.textContent = data.explanation || 'No explanation available.';
+                        
+                        // Create engagement comparison chart
+                        createEngagementChart(data);
+                        
+                        // Show results
+                        resultContainer.style.display = 'block';
+                    })
+                    .catch(error => {
+                        loadingDiv.style.display = 'none';
+                        alert(`Error: ${error.message}`);
+                    });
+            });
+            
+            // Check for URL parameter to auto-analyze
+            const urlParams = new URLSearchParams(window.location.search);
+            const tweetId = urlParams.get('id');
+            
+            if (tweetId) {
+                tweetUrlInput.value = tweetId;
+                analyzeForm.dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html> 
