@@ -7,6 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>X Bot Checker</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://db.onlinewebfonts.com" crossorigin>
@@ -15,6 +16,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css?v={{ timestamp }}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css?v={{ timestamp }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js?v={{ timestamp }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
     <style>
         /* Version: {{ timestamp }} */
         @font-face {
@@ -112,11 +114,12 @@
         
         .navbar-container {
             max-width: 1000px;
-            padding: 1rem;
+            padding: 0 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin: 0 auto;
+            width: 100%;
         }
         
         .hero-section {
@@ -225,9 +228,13 @@
         
         .loading {
             display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            padding: 2rem;
+            padding: 3rem;
             margin-top: 2rem;
+            min-height: 200px;
         }
         
         .spinner {
@@ -247,6 +254,14 @@
         .loading-text {
             font-size: 1.2rem;
             color: rgba(255, 255, 255, 0.8);
+            margin-top: 1rem;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
         }
         
         .result-container {
@@ -394,7 +409,7 @@
         
         .engagement-chart-container {
             margin: 2.5rem 0;
-            height: 350px;
+            height: 400px;
             border-radius: 12px;
             padding: 1.5rem;
             background-color: rgba(0, 0, 0, 0.2);
@@ -454,6 +469,22 @@
             font-size: 1.05rem;
         }
         
+        .disclaimer {
+            margin-top: 2rem;
+            padding: 1.2rem;
+            background-color: rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        
+        .disclaimer p {
+            margin-bottom: 0;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
         footer {
             text-align: center;
             padding: 2rem 0;
@@ -470,30 +501,11 @@
         
         footer a:hover {
             color: var(--text-color);
+            text-decoration: underline;
         }
         
         @media (max-width: 768px) {
             .container {
-                padding: 1.5rem 1rem;
-            }
-            
-            .navbar-container {
-                padding: 0.75rem 1rem;
-            }
-            
-            .hero-title {
-                font-size: 2rem;
-            }
-            
-            .hero-subtitle {
-                font-size: 1rem;
-            }
-            
-            .form-container {
-                padding: 1.5rem;
-            }
-            
-            .result-container {
                 padding: 1.5rem;
             }
             
@@ -528,6 +540,15 @@
             
             .percentage-indicator {
                 font-size: 1.25rem;
+            }
+            
+            .views-metric-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .view-metric {
+                width: 100%;
             }
         }
         
@@ -606,6 +627,30 @@
             color: var(--accent-color);
         }
         
+        .history-btn {
+            margin-left: 1rem;
+            padding: 0.5rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            background: linear-gradient(90deg, #FF9D42, #FFC107);
+            border: none;
+            color: #000;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .history-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 157, 66, 0.3);
+            background: linear-gradient(90deg, #FFC107, #FF9D42);
+            color: #000;
+            text-decoration: none;
+        }
+        
         .engagement-metrics {
             display: flex;
             flex-wrap: wrap;
@@ -647,11 +692,14 @@
         
         .views-metric-container {
             display: flex;
-            justify-content: center;
-            gap: 3rem;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+            width: 100%;
         }
         
         .view-metric {
+            flex: 1;
             text-align: center;
         }
         
@@ -687,6 +735,230 @@
                 font-size: 1.75rem;
             }
         }
+        
+        /* Thank You Modal Styles */
+        .modal-open {
+            overflow: hidden;
+        }
+        
+        .thank-you-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .thank-you-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            z-index: 1;
+        }
+        
+        .modal-content {
+            position: relative;
+            width: 90%;
+            max-width: 500px;
+            background: linear-gradient(145deg, #1E2124, #2A2E32);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 2;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transform: translateY(30px);
+            opacity: 0;
+            animation: modalFadeIn 0.5s ease forwards;
+        }
+        
+        @keyframes modalFadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-icon {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-logo {
+            width: 240px;
+            height: 240px;
+            object-fit: contain;
+            z-index: 2;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .pulse-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: rgba(255, 157, 66, 0.2);
+            z-index: 1;
+            animation: pulseRing 2s infinite;
+        }
+        
+        @keyframes pulseRing {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.3;
+            }
+            50% {
+                opacity: 0.2;
+            }
+            100% {
+                transform: scale(1.1);
+                opacity: 0;
+            }
+        }
+        
+        .modal-title {
+            font-family: 'Apotek Extended', sans-serif;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin-bottom: 1.2rem;
+            text-transform: uppercase;
+        }
+        
+        .modal-text {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        
+        .discord-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, #5865F2, #7289DA);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 1.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(88, 101, 242, 0.4);
+        }
+        
+        .discord-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(88, 101, 242, 0.5);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .discord-button i {
+            margin-right: 0.5rem;
+            font-size: 1.2rem;
+        }
+        
+        .close-modal-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .close-modal-btn:hover {
+            color: var(--text-color);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .modal-content {
+                padding: 2rem;
+            }
+            
+            .modal-title {
+                font-size: 1.5rem;
+            }
+            
+            .modal-text {
+                font-size: 1rem;
+            }
+            
+            .discord-button {
+                padding: 0.7rem 1.2rem;
+                font-size: 1rem;
+            }
+            
+            .modal-icon {
+                width: 200px;
+                height: 200px;
+            }
+            
+            .modal-logo {
+                width: 160px;
+                height: 160px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .modal-icon {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .modal-logo {
+                width: 120px;
+                height: 120px;
+            }
+        }
+        
+        /* End of Thank You Modal Styles */
     </style>
 </head>
 <body>
@@ -696,8 +968,11 @@
                 <img src="{{ url_for('static', filename='images/logo.png') }}?v={{ timestamp }}" alt="Logo">
             </a>
             <div class="social-links">
-                <a href="https://www.x.com/smok3io" target="_blank" class="social-icon">
+                <a href="https://www.x.com/smok3io" target="_blank" class="social-icon me-3">
                     <i class="fab fa-twitter"></i>
+                </a>
+                <a href="https://www.discord.gg/smok3" target="_blank" class="social-icon me-3">
+                    <i class="fab fa-discord"></i>
                 </a>
                 <a href="https://www.smok3.io" target="_blank" class="social-icon">
                     <i class="fas fa-globe"></i>
@@ -714,7 +989,7 @@
             <div class="form-container">
                 <form id="analyzeForm">
                     <div class="form-group">
-                        <input type="text" class="form-control" id="tweetUrl" placeholder="Enter Post URL or ID" required>
+                        <input type="text" class="form-control" id="tweetInput" placeholder="Enter Post URL or ID" required>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-search me-2"></i>Analyze Post
                         </button>
@@ -725,6 +1000,7 @@
             <div class="loading" id="loadingIndicator">
                 <div class="spinner"></div>
                 <p class="loading-text">Analyzing post data...</p>
+                <p class="text-muted" style="font-size: 0.9rem; margin-top: 0.5rem;">This may take a few moments</p>
             </div>
             
             <div class="result-container" id="resultContainer">
@@ -737,6 +1013,9 @@
                             </div>
                             <div class="score-label">Bot Likelihood</div>
                             <p class="text-center text-muted">Higher percentage indicates higher likelihood of bot activity</p>
+                            <button id="reanalyzeButton" class="btn btn-outline-secondary" style="display: none;" onclick="reanalyzePost()">
+                                <i class="fas fa-sync-alt"></i> Re-analyze
+                            </button>
                         </div>
                         
                         <div class="engagement-metrics">
@@ -754,6 +1033,21 @@
                             </div>
                         </div>
                         
+                        <div class="engagement-metrics">
+                            <div class="metric-card">
+                                <div id="avgRetweetCount" class="metric-value">0</div>
+                                <div class="metric-label">User Avg Reposts</div>
+                            </div>
+                            <div class="metric-card">
+                                <div id="avgLikeCount" class="metric-value">0</div>
+                                <div class="metric-label">User Avg Likes</div>
+                            </div>
+                            <div class="metric-card">
+                                <div id="avgReplyCount" class="metric-value">0</div>
+                                <div class="metric-label">User Avg Replies</div>
+                            </div>
+                        </div>
+                        
                         <div class="views-metric-card">
                             <div class="views-metric-container">
                                 <div class="view-metric">
@@ -762,19 +1056,27 @@
                                 </div>
                                 <div class="view-metric">
                                     <div id="avgViewCount" class="metric-value">0</div>
-                                    <div class="metric-label">Avg</div>
+                                    <div class="metric-label">User Avg</div>
+                                </div>
+                                <div class="view-metric">
+                                    <div id="rangeAvgViewCount" class="metric-value">0</div>
+                                    <div class="metric-label">Similar Accts Avg</div>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="engagement-chart-container">
-                            <h6 class="engagement-chart-title">Engagement Comparison</h6>
+                            <h6 class="engagement-chart-title">Engagement Comparison (Reposts, Likes, Replies)</h6>
                             <canvas id="engagementChart"></canvas>
                         </div>
                         
                         <div class="explanation">
                             <h6><i class="fas fa-info-circle me-2"></i>Analysis Explanation</h6>
                             <p id="explanationText">Enter a post URL or ID above to analyze it for potential bot activity.</p>
+                        </div>
+                        
+                        <div class="disclaimer">
+                            <p><i class="fas fa-exclamation-circle me-2"></i><strong>Disclaimer:</strong> The analysis provided is based on available data patterns and algorithmic assessment. Results should be interpreted as indicative rather than definitive. This tool does not guarantee the identification of automated activity with absolute certainty, and assessments should be considered alongside other factors when evaluating account authenticity.</p>
                         </div>
                     </div>
                 </div>
@@ -788,13 +1090,50 @@
         </div>
     </footer>
 
+    <!-- Thank You Modal -->
+    <div id="thankYouModal" class="thank-you-modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-icon">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SMOK3 Logo" class="modal-logo">
+                <div class="pulse-ring"></div>
+            </div>
+            <h3 class="modal-title">Thanks for Using Our Tool!</h3>
+            <p class="modal-text">We're helping creators quit their day job.</p>
+            <p class="modal-text">Join our Discord to get paid opportunities.</p>
+            <a href="https://www.discord.gg/smok3" target="_blank" class="discord-button">
+                <i class="fab fa-discord"></i> Join Our Discord
+            </a>
+            <button class="close-modal-btn" onclick="closeThankYouModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
     <script>
+        // Counter to track how many posts have been analyzed
+        let postAnalysisCounter = parseInt(localStorage.getItem('postAnalysisCounter') || '0');
+        
         function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            // Round the number to an integer
+            num = Math.round(num);
+            
+            if (num >= 1000000) {
+                return Math.round(num / 1000000) + 'M';
+            } else if (num >= 1000) {
+                return Math.round(num / 1000) + 'K';
+            } else {
+                return num.toString();
+            }
         }
         
         function setScoreColor(score) {
             const scoreCircle = document.getElementById('scoreCircle');
+            if (!scoreCircle) {
+                console.error('Score circle element not found');
+                return;
+            }
+            
             scoreCircle.classList.remove('score-low', 'score-medium', 'score-high');
             
             // Update the conic gradient to represent the percentage
@@ -812,25 +1151,16 @@
                 scoreCircle.classList.add('score-low');
             }
             
-            // Update the pseudo-element's background
+            // Set the color variable
             scoreCircle.style.setProperty('--score-color', scoreColor);
             
-            // Apply the conic gradient to the pseudo-element
-            document.documentElement.style.setProperty('--score-gradient', 
+            // Update the root gradient variable
+            document.documentElement.style.setProperty('--score-gradient',
                 `conic-gradient(${scoreColor} 0% ${score}%, transparent ${score}% 100%)`);
         }
         
         function animateCount(element, target, duration) {
-            // Handle NaN or undefined values
-            if (isNaN(target) || target === undefined || target === null) {
-                console.warn(`Invalid target value: ${target}, setting to 0`);
-                target = 0;
-            }
-            
-            // Convert to number to ensure proper calculation
-            target = Number(target);
-            
-            const start = parseInt(element.textContent) || 0;
+            const start = parseInt(element.textContent.replace(/,/g, '')) || 0;
             const increment = (target - start) / (duration / 16);
             let current = start;
             
@@ -846,216 +1176,356 @@
         }
         
         let engagementChart = null;
+        let currentTweetId = null;
         
         document.getElementById('analyzeForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const tweetUrl = document.getElementById('tweetUrl').value.trim();
-            if (!tweetUrl) return;
+            // Get the tweet URL or ID
+            const tweetInput = document.getElementById('tweetInput').value.trim();
             
-            // Extract tweet ID from URL if needed
-            let tweetId = tweetUrl;
-            if (tweetUrl.includes('/')) {
-                const parts = tweetUrl.split('/');
-                tweetId = parts[parts.length - 1].split('?')[0];
+            if (!tweetInput) {
+                alert('Please enter a valid X post URL or ID');
+                return;
             }
             
-            // Show loading indicator
-            document.getElementById('loadingIndicator').style.display = 'block';
-            document.getElementById('resultContainer').style.display = 'none';
+            // Extract the tweet ID from the URL if needed
+            let tweetId = tweetInput;
             
-            // Make API request
-            fetch(`/?id=${tweetId}&analyze=true`)
-                .then(response => response.json())
-                .then(data => {
-                    console.log("API response:", data);
-                    
-                    // Check if there's an error in the response
-                    if (data.error) {
-                        console.error("API error:", data.error);
-                        // Still show the data we have, but also show an alert
-                        alert(`Error: ${data.error}\nShowing available data.`);
-                    }
-                    
-                    // Update score (default to 0 if missing)
-                    const scoreValue = document.getElementById('scoreValue');
-                    scoreValue.textContent = '0';
-                    animateCount(scoreValue, data.score || 0, 1500);
-                    setScoreColor(data.score || 0);
-                    
-                    // Update metrics (default to 0 if missing)
-                    const retweetCount = document.getElementById('retweetCount');
-                    const likeCount = document.getElementById('likeCount');
-                    const replyCount = document.getElementById('replyCount');
-                    const viewCount = document.getElementById('viewCount');
-                    const avgViewCount = document.getElementById('avgViewCount');
-                    
-                    retweetCount.textContent = '0';
-                    likeCount.textContent = '0';
-                    replyCount.textContent = '0';
-                    viewCount.textContent = '0';
-                    avgViewCount.textContent = '0';
-                    
-                    animateCount(retweetCount, data.retweet_count || 0, 1000);
-                    animateCount(likeCount, data.favorite_count || 0, 1000);
-                    animateCount(replyCount, data.reply_count || 0, 1000);
-                    animateCount(viewCount, data.view_count || 0, 1000);
-                    
-                    // Add average views animation
-                    if (data.engagement_comparison && data.engagement_comparison.avg_engagement) {
-                        // Round up the average views to remove decimals
-                        const roundedAvgViews = Math.ceil(data.engagement_comparison.avg_engagement.avg_views || 0);
-                        animateCount(avgViewCount, roundedAvgViews, 1000);
-                    }
-                    
-                    // Update explanation (default to a message if missing)
-                    document.getElementById('explanationText').textContent = 
-                        data.explanation || "No explanation available. The analysis may have encountered an error.";
-                    
-                    // Create engagement comparison chart - now excluding views for better scaling
-                    if (data.engagement_comparison && data.engagement_comparison.avg_engagement) {
-                        const avgEngagement = data.engagement_comparison.avg_engagement;
-                        const ctx = document.getElementById('engagementChart').getContext('2d');
-                        
-                        // Destroy previous chart if it exists
-                        if (engagementChart) {
-                            engagementChart.destroy();
+            // Check if it's a URL
+            if (tweetInput.includes('/')) {
+                // Extract the tweet ID from the URL
+                const urlParts = tweetInput.split('/');
+                tweetId = urlParts[urlParts.length - 1].split('?')[0];
+            }
+            
+            // Analyze the post
+            analyzePost(tweetId);
+        });
+        
+        function reanalyzePost() {
+            // Get the button
+            const button = document.getElementById('reanalyzeButton');
+            
+            // Disable the button and show loading indicator
+            button.disabled = true;
+            const originalContent = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+            
+            // Create a form and submit it to redirect to the reanalyze endpoint
+            const form = document.createElement('form');
+            form.method = 'GET';
+            form.action = '/reanalyze';
+            
+            // Add the post ID as a hidden field
+            const idField = document.createElement('input');
+            idField.type = 'hidden';
+            idField.name = 'id';
+            idField.value = currentTweetId;
+            form.appendChild(idField);
+            
+            // Add the redirect_to parameter
+            const redirectField = document.createElement('input');
+            redirectField.type = 'hidden';
+            redirectField.name = 'redirect_to';
+            redirectField.value = 'home';
+            form.appendChild(redirectField);
+            
+            // Add the form to the document and submit it
+            document.body.appendChild(form);
+            form.submit();
+        }
+        
+        function analyzePost(tweetId) {
+            try {
+                // Show loading indicator
+                const loadingIndicator = document.getElementById('loadingIndicator');
+                const resultContainer = document.getElementById('resultContainer');
+                
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'flex';
+                }
+                
+                if (resultContainer) {
+                    resultContainer.style.display = 'none';
+                }
+                
+                // Make the API call
+                fetch(`/?id=${tweetId}&analyze=true`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide loading indicator
+                        if (loadingIndicator) {
+                            loadingIndicator.style.display = 'none';
                         }
                         
-                        // Exclude views from the chart for better scaling
-                        const labels = ['Reposts', 'Likes', 'Replies'];
-                        const currentData = [
-                            data.retweet_count || 0,
-                            data.favorite_count || 0,
-                            data.reply_count || 0
-                        ];
+                        // Update the UI with the data
+                        updateUI(data);
                         
-                        const averageData = [
-                            avgEngagement.avg_retweets || 0,
-                            avgEngagement.avg_likes || 0,
-                            avgEngagement.avg_replies || 0
-                        ];
+                        // Show the result container
+                        if (resultContainer) {
+                            resultContainer.style.display = 'block';
+                            
+                            // Scroll to the results
+                            resultContainer.scrollIntoView({ behavior: 'smooth' });
+                        }
                         
-                        engagementChart = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: labels,
-                                datasets: [
-                                    {
-                                        label: 'Current Post',
-                                        data: currentData,
-                                        backgroundColor: 'rgba(255, 157, 66, 0.8)',
-                                        borderColor: 'rgba(255, 157, 66, 1)',
-                                        borderWidth: 1,
-                                        borderRadius: 8,
-                                        barPercentage: 0.6,
-                                        categoryPercentage: 0.8
-                                    },
-                                    {
-                                        label: 'User Average',
-                                        data: averageData,
-                                        backgroundColor: 'rgba(103, 213, 197, 0.8)',
-                                        borderColor: 'rgba(103, 213, 197, 1)',
-                                        borderWidth: 1,
-                                        borderRadius: 8,
-                                        barPercentage: 0.6,
-                                        categoryPercentage: 0.8
-                                    }
-                                ]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        position: 'top',
-                                        labels: {
-                                            color: 'rgba(255, 255, 255, 0.8)',
-                                            font: {
-                                                family: "'Inter', sans-serif",
-                                                size: 12
-                                            },
-                                            boxWidth: 15,
-                                            padding: 15
-                                        }
-                                    },
-                                    tooltip: {
-                                        backgroundColor: 'rgba(30, 33, 36, 0.9)',
-                                        titleColor: '#fff',
-                                        bodyColor: '#fff',
-                                        borderColor: 'rgba(255, 157, 66, 0.3)',
-                                        borderWidth: 1,
-                                        padding: 12,
-                                        cornerRadius: 8,
-                                        titleFont: {
-                                            family: "'Inter', sans-serif",
-                                            size: 14,
-                                            weight: 'bold'
-                                        },
-                                        bodyFont: {
-                                            family: "'Inter', sans-serif",
-                                            size: 13
-                                        },
-                                        displayColors: true,
-                                        boxWidth: 10,
-                                        boxHeight: 10,
-                                        boxPadding: 3,
-                                        usePointStyle: true
-                                    }
-                                },
-                                scales: {
-                                    y: {
-                                        type: 'logarithmic',
-                                        beginAtZero: true,
-                                        grid: {
-                                            color: 'rgba(255, 255, 255, 0.05)',
-                                            borderColor: 'rgba(255, 255, 255, 0.1)',
-                                            tickColor: 'rgba(255, 255, 255, 0.1)'
-                                        },
-                                        ticks: {
-                                            color: 'rgba(255, 255, 255, 0.7)',
-                                            font: {
-                                                family: "'Inter', sans-serif",
-                                                size: 11
-                                            },
-                                            callback: function(value, index, values) {
-                                                if (value === 0) return '0';
-                                                if (value === 1) return '1';
-                                                if (value === 10) return '10';
-                                                if (value === 100) return '100';
-                                                if (value === 1000) return '1K';
-                                                if (value === 10000) return '10K';
-                                                if (value === 100000) return '100K';
-                                                if (value === 1000000) return '1M';
-                                                return '';
-                                            }
-                                        }
-                                    },
-                                    x: {
-                                        grid: {
-                                            display: false
-                                        },
-                                        ticks: {
-                                            color: 'rgba(255, 255, 255, 0.7)',
-                                            font: {
-                                                family: 'Inter'
-                                            }
-                                        }
-                                    }
-                                }
+                        // Store the tweet ID for re-analysis
+                        currentTweetId = tweetId;
+                        
+                        // Show the re-analyze button
+                        const reanalyzeButton = document.getElementById('reanalyzeButton');
+                        if (reanalyzeButton) {
+                            reanalyzeButton.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error analyzing post:', error);
+                        
+                        // Hide loading indicator
+                        if (loadingIndicator) {
+                            loadingIndicator.style.display = 'none';
+                        }
+                        
+                        // Show error message
+                        alert(`Error analyzing post: ${error.message || 'Unknown error'}`);
+                    });
+            } catch (error) {
+                console.error('Exception in analyzePost function:', error);
+                alert(`Error analyzing post: ${error.message || 'Unknown error'}`);
+                
+                // Hide loading indicator in case of error
+                const loadingIndicator = document.getElementById('loadingIndicator');
+                if (loadingIndicator) {
+                    loadingIndicator.style.display = 'none';
+                }
+            }
+        }
+        
+        function updateUI(data) {
+            // Update score (default to 0 if missing)
+            const scoreValue = document.getElementById('scoreValue');
+            if (scoreValue) {
+                scoreValue.textContent = '0';
+                animateCount(scoreValue, data.score || 0, 1500);
+                setScoreColor(data.score || 0);
+            }
+            
+            // Update explanation with Markdown support
+            const explanationText = document.getElementById('explanationText');
+            if (explanationText) {
+                const explanation = data.explanation || 'No explanation available';
+                explanationText.innerHTML = marked.parse(explanation);
+            }
+            
+            // Update metrics
+            const retweetCount = document.getElementById('retweetCount');
+            if (retweetCount) {
+                retweetCount.textContent = formatNumber(data.retweet_count || 0);
+            }
+            
+            const likeCount = document.getElementById('likeCount');
+            if (likeCount) {
+                likeCount.textContent = formatNumber(data.favorite_count || 0);
+            }
+            
+            const replyCount = document.getElementById('replyCount');
+            if (replyCount) {
+                replyCount.textContent = formatNumber(data.reply_count || 0);
+            }
+            
+            const viewCount = document.getElementById('viewCount');
+            if (viewCount) {
+                viewCount.textContent = formatNumber(data.view_count || 0);
+            }
+            
+            const followerCount = document.getElementById('followerCount');
+            if (followerCount) {
+                followerCount.textContent = formatNumber(data.followers || 0);
+            }
+            
+            // Update average engagement metrics if available
+            if (data.engagement_comparison && data.engagement_comparison.avg_engagement) {
+                const avgRetweetCount = document.getElementById('avgRetweetCount');
+                if (avgRetweetCount) {
+                    avgRetweetCount.textContent = formatNumber(data.engagement_comparison.avg_engagement.avg_retweets || 0);
+                }
+                
+                const avgLikeCount = document.getElementById('avgLikeCount');
+                if (avgLikeCount) {
+                    avgLikeCount.textContent = formatNumber(data.engagement_comparison.avg_engagement.avg_likes || 0);
+                }
+                
+                const avgReplyCount = document.getElementById('avgReplyCount');
+                if (avgReplyCount) {
+                    avgReplyCount.textContent = formatNumber(data.engagement_comparison.avg_engagement.avg_replies || 0);
+                }
+                
+                const avgViewCount = document.getElementById('avgViewCount');
+                if (avgViewCount) {
+                    avgViewCount.textContent = formatNumber(data.engagement_comparison.avg_engagement.avg_views || 0);
+                }
+            }
+            
+            // Update the similar accounts average view count
+            if (data.follower_range_comparison && data.follower_range_comparison.avg_metrics) {
+                const rangeAvgViewCount = document.getElementById('rangeAvgViewCount');
+                if (rangeAvgViewCount) {
+                    rangeAvgViewCount.textContent = formatNumber(data.follower_range_comparison.avg_metrics.avg_views || 0);
+                }
+            }
+            
+            // Update the chart if it exists
+            updateEngagementChart(data);
+            
+            // Increment the post analysis counter
+            postAnalysisCounter++;
+            
+            // Save counter to localStorage
+            localStorage.setItem('postAnalysisCounter', postAnalysisCounter.toString());
+            
+            // Show the thank you modal on the 1st post and then every 5th post (5th, 10th, 15th, etc.)
+            if (postAnalysisCounter === 1 || postAnalysisCounter % 5 === 0) {
+                setTimeout(showThankYouModal, 5000);
+            }
+        }
+        
+        function updateEngagementChart(data) {
+            // If the chart already exists, destroy it
+            if (engagementChart) {
+                engagementChart.destroy();
+            }
+            
+            // Get the chart canvas
+            const canvas = document.getElementById('engagementChart');
+            if (!canvas) {
+                console.error('Engagement chart canvas not found');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('Could not get 2D context from canvas');
+                return;
+            }
+            
+            // Prepare the data - remove views, only include reposts, likes, and replies
+            const currentEngagement = [
+                data.retweet_count || 0,
+                data.favorite_count || 0,
+                data.reply_count || 0
+            ];
+            
+            let avgEngagement = [0, 0, 0];
+            if (data.engagement_comparison && data.engagement_comparison.avg_engagement) {
+                avgEngagement = [
+                    data.engagement_comparison.avg_engagement.avg_retweets || 0,
+                    data.engagement_comparison.avg_engagement.avg_likes || 0,
+                    data.engagement_comparison.avg_engagement.avg_replies || 0
+                ];
+            }
+            
+            // Prepare similar accounts data - remove views
+            let similarAccountsEngagement = [0, 0, 0];
+            if (data.follower_range_comparison && data.follower_range_comparison.avg_metrics) {
+                similarAccountsEngagement = [
+                    data.follower_range_comparison.avg_metrics.avg_retweets || 0,
+                    data.follower_range_comparison.avg_metrics.avg_likes || 0,
+                    data.follower_range_comparison.avg_metrics.avg_replies || 0
+                ];
+            }
+            
+            // Create the chart
+            engagementChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Reposts', 'Likes', 'Replies'],
+                    datasets: [
+                        {
+                            label: 'Current Post',
+                            data: currentEngagement,
+                            backgroundColor: 'rgba(255, 157, 66, 0.7)',
+                            borderColor: 'rgba(255, 157, 66, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'User Average',
+                            data: avgEngagement,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Similar Accounts',
+                            data: similarAccountsEngagement,
+                            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        },
+                        x: {
+                            grid: {
+                                display: false
                             }
-                        });
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 10,
+                            top: 20,
+                            bottom: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                padding: 20
+                            }
+                        }
                     }
-                    
-                    // Show results
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    document.getElementById('resultContainer').style.display = 'block';
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    alert('Error analyzing post. Please try again.');
-                });
+                }
+            });
+        }
+        
+        // Thank You Modal Functions
+        function showThankYouModal() {
+            const modal = document.getElementById('thankYouModal');
+            if (modal) {
+                document.body.classList.add('modal-open');
+                modal.classList.add('show');
+            }
+        }
+        
+        function closeThankYouModal() {
+            const modal = document.getElementById('thankYouModal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    document.body.classList.remove('modal-open');
+                }, 300);
+            }
+        }
+        
+        // Close modal when clicking outside of it
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('thankYouModal');
+            const modalContent = document.querySelector('.modal-content');
+            
+            if (modal && modal.classList.contains('show') && 
+                event.target !== modalContent && 
+                !modalContent.contains(event.target)) {
+                closeThankYouModal();
+            }
         });
     </script>
 </body>

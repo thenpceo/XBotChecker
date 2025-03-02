@@ -1,13 +1,8 @@
 import json
 import os
-import re
 import random
 import time
-import requests
-
-from dotenv import load_dotenv
 from hashlib import md5
-from urllib.parse import urljoin, urlparse, urlunparse
 
 # Try to import OpenAI, but don't fail if it's not available
 try:
@@ -15,7 +10,6 @@ try:
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
-    print("OpenAI package not available")
 
 from config import CONFIG
 
@@ -27,15 +21,14 @@ class Scraper:
             try:
                 self.openai_client = openai.OpenAI(api_key=CONFIG['OPENAI_API_KEY'])
             except Exception as e:
-                print(f"Error initializing OpenAI client: {str(e)}")
+                pass
         
         # Set up cache directory
         self.cache_dir = cache_dir
         if not os.path.exists(cache_dir):
             try:
                 os.makedirs(cache_dir)
-            except Exception as e:
-                print(f"Error creating cache directory: {str(e)}")
+            except Exception:
                 # Use a temporary directory if we can't create the cache directory
                 self.cache_dir = os.path.join('/tmp', 'cache')
                 if not os.path.exists(self.cache_dir):
@@ -62,8 +55,7 @@ class Scraper:
         try:
             with open(cache_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except Exception as e:
-            print(f"Error reading cache: {str(e)}")
+        except Exception:
             return None
 
     def _write_cache(self, url, data, suffix=''):
@@ -73,8 +65,8 @@ class Scraper:
         try:
             with open(cache_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            print(f"Error writing cache: {str(e)}")
+        except Exception:
+            pass
 
     def analyze(self, url: str) -> dict:
         """
@@ -83,11 +75,8 @@ class Scraper:
         For Vercel deployment, this is a simplified version that returns mock data
         since Playwright is difficult to run in a serverless environment.
         """
-        print(f"Analyzing tweet: {url}")
-        
         # Check if we have cached results
         if self._cache_exists(url, '_analysis'):
-            print(f"Using cached analysis for {url}")
             cached_data = self._read_cache(url, '_analysis')
             if cached_data:
                 return cached_data
@@ -137,7 +126,6 @@ class Scraper:
             
             return result
         except Exception as e:
-            print(f"Error analyzing tweet: {str(e)}")
             return {
                 "error": f"Error analyzing tweet: {str(e)}",
                 "score": 0,

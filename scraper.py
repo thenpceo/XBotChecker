@@ -4,6 +4,7 @@ import re
 import openai
 import random
 import time
+import math
 
 from dotenv import load_dotenv
 from hashlib import md5
@@ -33,6 +34,18 @@ class Scraper:
     def _write_cache(self, url, data, suffix=''):
         with open(self._get_cache_path(url, suffix), 'w') as f:
             json.dump(data, f)
+
+    def clear_cache(self, url, suffix=''):
+        """
+        Clear the cache for a specific URL
+        """
+        cache_path = self._get_cache_path(url, suffix)
+        if os.path.exists(cache_path):
+            os.remove(cache_path)
+            print(f"Cleared cache for {url} with suffix {suffix}")
+            return True
+        print(f"No cache found for {url} with suffix {suffix}")
+        return False
 
     def intercept_route(self, route):
         """intercept all requests and abort blocked ones"""
@@ -344,6 +357,53 @@ class Scraper:
                     print(f"Could not convert {value} to int, using default {default}")
                     return default
             
+            # Helper function to calculate engagement ratios
+            def calculate_engagement_ratios(metrics):
+                ratios = {}
+                
+                # Extract basic metrics
+                likes = metrics.get('favorite_count', 0)
+                retweets = metrics.get('retweet_count', 0)
+                replies = metrics.get('reply_count', 0)
+                quotes = metrics.get('quote_count', 0)
+                views = metrics.get('view_count', 0)
+                followers = metrics.get('followers', 0)
+                
+                # Calculate total engagement
+                total_engagement = likes + retweets + replies + quotes
+                
+                # Calculate key ratios
+                if views > 0:
+                    ratios['engagement_to_views'] = (total_engagement / views) * 100  # as percentage
+                else:
+                    ratios['engagement_to_views'] = 0
+                    
+                if likes > 0:
+                    ratios['retweet_to_like'] = retweets / likes
+                else:
+                    ratios['retweet_to_like'] = 0 if retweets == 0 else 1e9  # Use 1e9 instead of float('inf')
+                    
+                if followers > 0:
+                    ratios['views_to_followers'] = views / followers
+                    ratios['engagement_to_followers'] = (total_engagement / followers) * 100  # as percentage
+                else:
+                    ratios['views_to_followers'] = 0 if views == 0 else 1e9  # Use 1e9 instead of float('inf')
+                    ratios['engagement_to_followers'] = 0 if total_engagement == 0 else 1e9  # Use 1e9 instead of float('inf')
+                
+                # Calculate engagement distribution
+                if total_engagement > 0:
+                    ratios['likes_percentage'] = (likes / total_engagement) * 100
+                    ratios['retweets_percentage'] = (retweets / total_engagement) * 100
+                    ratios['replies_percentage'] = (replies / total_engagement) * 100
+                    ratios['quotes_percentage'] = (quotes / total_engagement) * 100
+                else:
+                    ratios['likes_percentage'] = 0
+                    ratios['retweets_percentage'] = 0
+                    ratios['replies_percentage'] = 0
+                    ratios['quotes_percentage'] = 0
+                
+                return ratios
+            
             # Extract tweet data
             if 'legacy' in data:
                 print("Extracting legacy tweet data")
@@ -520,7 +580,11 @@ class Scraper:
                     print("No legacy data found in user data")
             else:
                 print("No user data found in tweet")
-                
+            
+            # Calculate engagement ratios
+            engagement_ratios = calculate_engagement_ratios(extracted)
+            extracted['engagement_ratios'] = engagement_ratios
+            
             print(f"Extracted data: {extracted}")
             return extracted
         except Exception as e:
@@ -549,14 +613,14 @@ class Scraper:
             if not tweet_data:
                 print(f"No tweet data found for {scrape_url}")
                 return {"error": "No tweet data found"}
-                
+            
             print(f"Extracting data from tweet")
             extracted_data = self._extract(tweet_data)
             
             if not extracted_data:
                 print(f"Failed to extract data from tweet {scrape_url}")
                 return {"error": "Failed to extract data from tweet"}
-            
+                
             # Get user's screen name
             screen_name = extracted_data.get('screen_name', '')
             
@@ -614,34 +678,285 @@ class Scraper:
                         extracted_data['engagement_comparison'] = engagement_comparison
                         
                         print(f"Added engagement comparison: {engagement_comparison}")
-
+            
+            # Get follower range average metrics
+            from firebase_config import get_average_metrics_for_follower_count
+            
+            followers = extracted_data.get('followers', 0)
+            follower_range_metrics = get_average_metrics_for_follower_count(followers)
+            
+            # Always process follower range metrics, even if post_count is 0
+            # Calculate ratios compared to follower range averages
+            current_retweets = extracted_data.get('retweet_count', 0)
+            current_likes = extracted_data.get('favorite_count', 0)
+            current_replies = extracted_data.get('reply_count', 0)
+            current_quotes = extracted_data.get('quote_count', 0)
+            current_views = extracted_data.get('view_count', 0)
+            
+            range_avg_retweets = follower_range_metrics.get('avg_retweets', 10)
+            range_avg_likes = follower_range_metrics.get('avg_likes', 50)
+            range_avg_replies = follower_range_metrics.get('avg_replies', 5)
+            range_avg_quotes = follower_range_metrics.get('avg_quotes', 1)
+            range_avg_views = follower_range_metrics.get('avg_views', 1000)
+            
+            # Avoid division by zero
+            range_retweet_ratio = current_retweets / range_avg_retweets if range_avg_retweets > 0 else 0
+            range_like_ratio = current_likes / range_avg_likes if range_avg_likes > 0 else 0
+            range_reply_ratio = current_replies / range_avg_replies if range_avg_replies > 0 else 0
+            range_quote_ratio = current_quotes / range_avg_quotes if range_avg_quotes > 0 else 0
+            range_view_ratio = current_views / range_avg_views if range_avg_views > 0 else 0
+            
+            follower_range_comparison = {
+                'follower_range': follower_range_metrics.get('follower_range'),
+                'avg_metrics': {
+                    'avg_retweets': range_avg_retweets,
+                    'avg_likes': range_avg_likes,
+                    'avg_replies': range_avg_replies,
+                    'avg_quotes': range_avg_quotes,
+                    'avg_views': range_avg_views,
+                    'post_count': follower_range_metrics.get('post_count', 1)
+                },
+                'ratios': {
+                    'retweet_ratio': range_retweet_ratio,
+                    'like_ratio': range_like_ratio,
+                    'reply_ratio': range_reply_ratio,
+                    'quote_ratio': range_quote_ratio,
+                    'view_ratio': range_view_ratio
+                }
+            }
+            
+            # Add follower range comparison to extracted data
+            extracted_data['follower_range_comparison'] = follower_range_comparison
+            
+            print(f"Added follower range comparison: {follower_range_comparison}")
+            
+            # Add additional context about engagement velocity indicators
+            if 'engagement_ratios' in extracted_data:
+                ratios = extracted_data['engagement_ratios']
+                velocity_indicators = {}
+                
+                # Check for abnormal retweet-to-like ratio (potential bot indicator)
+                if ratios.get('retweet_to_like', 0) > 1.0:
+                    velocity_indicators['abnormal_retweet_ratio'] = True
+                    velocity_indicators['retweet_to_like_ratio'] = ratios['retweet_to_like']
+                
+                # Check for extremely high views-to-followers ratio (potential bot indicator)
+                views_to_followers_threshold = 10  # 10x more views than followers is suspicious
+                if ratios.get('views_to_followers', 0) > views_to_followers_threshold:
+                    velocity_indicators['abnormal_views_ratio'] = True
+                    velocity_indicators['views_to_followers_ratio'] = ratios['views_to_followers']
+                
+                # Check for engagement distribution (legitimate viral posts typically have higher likes percentage)
+                likes_percentage = ratios.get('likes_percentage', 0)
+                retweets_percentage = ratios.get('retweets_percentage', 0)
+                
+                if likes_percentage < retweets_percentage:
+                    velocity_indicators['inverted_engagement_distribution'] = True
+                    velocity_indicators['likes_percentage'] = likes_percentage
+                    velocity_indicators['retweets_percentage'] = retweets_percentage
+                
+                # Check for abnormal engagement compared to user's average (if available)
+                if 'engagement_comparison' in extracted_data:
+                    engagement_ratios = extracted_data['engagement_comparison'].get('engagement_ratios', {})
+                    
+                    # If view ratio is extremely high compared to user's average
+                    if engagement_ratios.get('view_ratio', 0) > 10:  # 10x more views than average
+                        velocity_indicators['abnormal_view_spike'] = True
+                        velocity_indicators['view_ratio_vs_average'] = engagement_ratios.get('view_ratio', 0)
+                    
+                    # If retweet ratio is extremely high compared to user's average
+                    if engagement_ratios.get('retweet_ratio', 0) > 10:  # 10x more retweets than average
+                        velocity_indicators['abnormal_retweet_spike'] = True
+                        velocity_indicators['retweet_ratio_vs_average'] = engagement_ratios.get('retweet_ratio', 0)
+                
+                # Check for abnormal engagement compared to follower range average (if available)
+                if 'follower_range_comparison' in extracted_data:
+                    range_ratios = extracted_data['follower_range_comparison'].get('ratios', {})
+                    
+                    # If view ratio is extremely high compared to follower range average
+                    if range_ratios.get('view_ratio', 0) > 10:  # 10x more views than average for this follower range
+                        velocity_indicators['abnormal_views_for_follower_range'] = True
+                        velocity_indicators['view_ratio_vs_range'] = range_ratios.get('view_ratio', 0)
+                
+                # Add velocity indicators to extracted data
+                extracted_data['velocity_indicators'] = velocity_indicators
+                
+                # Add a summary of engagement patterns
+                engagement_pattern = "NATURAL"
+                if len(velocity_indicators) >= 3:
+                    engagement_pattern = "EXTREMELY SUSPICIOUS"
+                elif len(velocity_indicators) == 2:
+                    engagement_pattern = "HIGHLY SUSPICIOUS"
+                elif len(velocity_indicators) == 1:
+                    engagement_pattern = "SOMEWHAT SUSPICIOUS"
+                
+                extracted_data['engagement_pattern'] = engagement_pattern
+            
             try:
                 print(f"Sending data to OpenAI for analysis")
+                
+                # Check if there's any user feedback for this post
+                from firebase_config import get_post_data
+                
+                # Get the post ID from the URL
+                post_id = url.split('/')[-1] if '/' in url else url
+                
+                # Check if we have existing data with user feedback
+                existing_data = get_post_data(post_id)
+                user_feedback_prompt = ""
+                
+                if existing_data and 'user_feedback' in existing_data:
+                    feedback = existing_data['user_feedback']
+                    if feedback.get('thumbs_up', False):
+                        user_feedback_prompt = "\n\nIMPORTANT: Users have marked this post's previous analysis as CORRECT. Consider this strong validation of the previous score."
+                    elif feedback.get('thumbs_down', False):
+                        user_feedback_prompt = "\n\nIMPORTANT: Users have marked this post's previous analysis as INCORRECT. The previous score may have been inaccurate. Please carefully re-evaluate all metrics."
+                
+                # Add user feedback data to extracted_data for the LLM to consider
+                if existing_data and 'user_feedback' in existing_data:
+                    extracted_data['user_feedback'] = existing_data['user_feedback']
+                
+                # Sanitize data before JSON serialization
+                sanitized_extracted_data = self._sanitize_json_data(extracted_data)
+                
                 message = self.client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
-                        {"role": "system", "content": "You are analyzing Twitter/X metrics to determine if a tweet's engagement appears to be botted. Provide a score out of 100 (100 being definitely botted) and a short explanation.\n\nImportant context:\n1. Twitter/X changed its verification system in 2023. The 'verified' field in the data may not be reliable as many legitimate accounts (including Elon Musk's) might show as 'unverified' in the API. We should still check if an account has the new blue verified checkmark, as unverified accounts are more likely botting.\n2. For well-known accounts like Elon Musk (@elonmusk), high follower counts are expected and not indicative of bot activity.\n3. The MOST IMPORTANT ratio to check is the engagement-to-views ratio. Botted posts typically have very high view counts with disproportionately low engagement (likes, retweets, replies). A post with 50,000 views but only 10 likes is highly suspicious.\n4. IMPORTANT: Low engagement relative to views or followers is NOT an indicator of botting. We're ONLY looking for disproportionately HIGH view counts compared to engagement. For example, a post with 2 comments and 20 likes should have around 1,000 views. If it has 15,000+ views, it's likely botted. But if it has fewer views than expected, that's completely normal and NOT botted.\n5. Expected view ranges based on follower count: Accounts with ~500 followers typically get around 200-1,500 views. Accounts with ~20,000 followers typically get around 3,000-10,000 views. Viral outliers are exceptions.\n6. If available, compare the current tweet's engagement with the user's average engagement. A sudden spike in engagement compared to the user's typical metrics is a strong indicator of potential bot activity.\n7. Pay special attention to the retweet-to-like ratio - normal posts typically have fewer retweets than likes, while botted posts often have as many or more retweets than likes. A high retweet-to-like ratio is a strong indicator of bot activity.\n8. Consider the account's history (tweet count) and follower-to-following ratio as secondary factors.\n9. Keep in mind the date the account was made. Often accounts that are botting have been made within a month.\n\nYour response should be in the format: 'Score: X/100\\n\\nExplanation: Your explanation here'"},
-                        {"role": "user", "content": json.dumps(extracted_data, indent=2)}
+                        {"role": "system", "content": "You are analyzing Twitter/X metrics to determine if a tweet's engagement appears to be botted. Provide a score out of 100 (100 being definitely botted) and a short explanation.\n\nAnalyze the following metrics in order of priority (most important to least important):\n\n1. ENGAGEMENT-TO-VIEWS RATIO (MOST IMPORTANT): A ratio of 2-8% is considered a good organic baseline. Deviations outside this range in either direction (below 2% OR above 8%) should be considered abnormal and contribute to botting scores. Both abnormally high and abnormally low engagement-to-views ratios can indicate botting activity.\n   - For values slightly outside the range (1.5-2% or 8-10%), assign a moderate score (30-40 range)\n   - For values significantly outside the range (<1% or >15%), assign a higher score (50-60 range)\n   - A single metric being slightly outside normal range should NOT result in a high botting score (>60) without other supporting evidence\n\n2. RETWEET-TO-LIKE RATIO: A ratio between 5-20% is considered organic. As this ratio increases beyond 20%, it becomes less likely to be organic. Botted posts often have abnormally high retweet-to-like ratios. Lower-than-average retweet-to-like ratios should NOT contribute to botting scores - only higher-than-average ratios should be considered suspicious.\n\n3. SUSPICIOUSLY BALANCED ENGAGEMENT: If likes, retweets, and comments are all very close in number to each other (within 5% difference), this is a strong indicator of botted activity. Organic engagement typically shows a clear hierarchy with likes > replies > retweets. Example of suspicious pattern: 315 likes, 300 comments, 298 retweets.\n   - This pattern is highly unnatural and should significantly increase the botting score (add 15-20 points)\n   - The closer these numbers are to each other, the more suspicious the activity\n   - This is especially suspicious for posts with more than 100 engagements\n\n4. COMPARISON TO SIMILAR ACCOUNTS: Compare the post's metrics to average metrics from accounts with similar follower counts. Only consider metrics that are significantly higher than the average (beyond 20% above average) as indicators of potential bot activity. Metrics that are below average or within 20% above average should not contribute to botting scores.\n\n5. COMPARISON TO HISTORICAL POSTS: Compare the post's metrics to the user's own historical average engagement. Only consider metrics that are significantly higher than the average (beyond 30% above average) as indicators of potential bot activity. Metrics that are below average or within 30% above average should not contribute to botting scores. While viral posts can legitimately exceed this range, consistent patterns of exceeding historical averages are suspicious.\n\n6. VERIFICATION STATUS: Only consider the current blue checkmark verification. Unverified accounts (without a blue checkmark) are more likely to be botting their posts, though this is not always true. Some verified accounts also bot their posts.\n\n7. ACCOUNT AGE: Accounts less than six months old have a significantly higher chance of botting their posts.\n\n8. VIRAL POST COEFFICIENT: For posts with views that far exceed historical or similar account averages, implement a special check:\n   - If the engagement-to-views ratio remains within the normal range (2-8%) despite high view counts, consider it potentially organic viral content\n   - If the engagement-to-views ratio is outside the normal range, it's more likely to be botted even if viral\n\nSCORING GUIDELINES:\n- 0-20: Very likely organic engagement\n- 21-40: Mostly organic with some unusual patterns (e.g., a single metric slightly outside normal range)\n- 41-60: Suspicious activity (multiple metrics outside normal ranges or one metric significantly abnormal)\n- 61-80: Likely botted (multiple significant abnormalities in engagement patterns)\n- 81-100: Almost certainly botted (extreme abnormalities across multiple metrics)\n\nAdditional context:\n- For well-known accounts with high follower counts, higher engagement metrics are expected and not necessarily indicative of bot activity.\n- Legitimate viral posts typically have balanced engagement metrics (proportional likes, comments, retweets) while botted posts often have skewed ratios.\n- Don't penalize legitimate viral posts if they maintain natural engagement ratios despite high view counts.\n- Remember that for most metrics, lower-than-average values should NOT contribute to botting scores, with the specific exception of engagement-to-views ratio, where both abnormally high AND abnormally low values should be considered suspicious.\n- The severity of the score should be proportional to both the number of abnormal metrics AND how far outside the normal range they are." + user_feedback_prompt},
+                        {"role": "user", "content": json.dumps(sanitized_extracted_data, indent=2)}
                     ],
                     max_tokens=1000,
                     temperature=0.5
                 )
-
+                
                 text = message.choices[0].message.content
                 print(f"Received response from OpenAI: {text}")
                 
-                score_match = re.search(r'Score: (\d+)/100', text)
-                score = int(score_match.group(1)) if score_match else 0  # Default to 0 if no score found
+                # Try multiple patterns to extract the score
+                score = 0
+                # First try the standard format: "Score: X/100"
+                score_match = re.search(r'Score:\s*(\d+)/100', text)
+                if score_match:
+                    score = int(score_match.group(1))
+                    print(f"Extracted score using standard format: {score}")
+                else:
+                    # Try alternative format: "Score: X"
+                    score_match = re.search(r'Score:\s*(\d+)', text)
+                    if score_match:
+                        score = int(score_match.group(1))
+                        print(f"Extracted score using alternative format: {score}")
+                    else:
+                        # Try to find any number followed by /100
+                        score_match = re.search(r'(\d+)/100', text)
+                        if score_match:
+                            score = int(score_match.group(1))
+                            print(f"Extracted score using number/100 format: {score}")
+                        else:
+                            # Look for a score at the beginning of the text (common format)
+                            score_match = re.search(r'^(\d+)(?:/100)?', text.strip())
+                            if score_match:
+                                score = int(score_match.group(1))
+                                print(f"Extracted score from beginning of text: {score}")
+                            else:
+                                # Try to find any standalone number that could be a score
+                                score_match = re.search(r'(?:score|rating|likelihood).*?(\d{1,3})(?:\s*%|\s*\/\s*100)?', text.lower())
+                                if score_match:
+                                    score = int(score_match.group(1))
+                                    print(f"Extracted score from contextual mention: {score}")
+                                else:
+                                    # If the explanation contains words like "high likelihood" or "likely botted", set a default high score
+                                    lower_text = text.lower()
+                                    
+                                    # High likelihood indicators (85-95)
+                                    high_indicators = [
+                                        "clearly a bot", "definitely a bot", "highly likely a bot", 
+                                        "strong evidence", "certainly automated", "undoubtedly",
+                                        "strong indicators", "high likelihood", "definitely",
+                                        "extremely high", "very high", "substantial evidence",
+                                        "clear signs", "obvious bot", "unmistakable",
+                                        "abnormally high retweet-to-like ratio", "disproportionate engagement",
+                                        "unnatural engagement velocity", "extremely suspicious"
+                                    ]
+                                    
+                                    # Medium likelihood indicators (50-70)
+                                    medium_indicators = [
+                                        "likely a bot", "probably a bot", "appears to be a bot", 
+                                        "suggests automation", "potentially automated", "moderate likelihood",
+                                        "suspicious activity", "unusual patterns", "questionable",
+                                        "possible bot", "indicators suggest", "somewhat suspicious",
+                                        "unusual engagement distribution", "somewhat unnatural"
+                                    ]
+                                    
+                                    # Low likelihood indicators (20-40)
+                                    low_indicators = [
+                                        "possibly a bot", "might be a bot", "some indicators", 
+                                        "does not suggest", "no strong indicators", "minimal evidence",
+                                        "slight possibility", "low likelihood", "few signs",
+                                        "minor indicators", "not conclusive", "mostly natural"
+                                    ]
+                                    
+                                    # Very low likelihood indicators (0-15)
+                                    very_low_indicators = [
+                                        "unlikely to be a bot", "not a bot", "human activity",
+                                        "organic engagement", "natural patterns", "genuine activity",
+                                        "authentic", "legitimate", "real user", "human user",
+                                        "viral post", "legitimate viral", "natural viral", "organic viral",
+                                        "balanced engagement", "proportional engagement", "natural distribution"
+                                    ]
+                                    
+                                    # Viral post indicators (should override high bot scores)
+                                    viral_indicators = [
+                                        "legitimate viral post", "natural viral growth", "organic viral spread",
+                                        "balanced engagement metrics", "proportional likes and retweets",
+                                        "substantial comment count", "engagement proportional to follower base",
+                                        "natural engagement ratios", "higher like-to-retweet ratio",
+                                        "meaningful comments", "typical viral pattern"
+                                    ]
+                                    
+                                    # Check for viral indicators first - these should override bot indicators
+                                    if any(viral in lower_text for viral in viral_indicators):
+                                        score = 15  # Low score for legitimate viral posts
+                                        print(f"Set low score for legitimate viral post: {score}")
+                                    elif any(high in lower_text for high in high_indicators):
+                                        score = 90
+                                        print(f"Set high score based on text analysis: {score}")
+                                    elif any(medium in lower_text for medium in medium_indicators):
+                                        score = 65
+                                        print(f"Set medium score based on text analysis: {score}")
+                                    elif any(low in lower_text for low in low_indicators):
+                                        score = 35
+                                        print(f"Set low score based on text analysis: {score}")
+                                    elif any(very_low in lower_text for very_low in very_low_indicators):
+                                        score = 10
+                                        print(f"Set very low score based on text analysis: {score}")
+                                    else:
+                                        # Last resort: check for general sentiment
+                                        if "bot" in lower_text and not any(neg in lower_text for neg in ["not a bot", "unlikely", "doesn't appear", "does not appear"]):
+                                            score = 50  # Default if we detect bot mentions without negation
+                                            print(f"Set default score based on bot mention: {score}")
+                                        else:
+                                            print("Could not extract score from text, defaulting to 0")
+                
+                # Ensure score is within valid range
+                score = max(0, min(100, score))
+                
                 explanation = text.split("Explanation:", 1)[-1].strip() if "Explanation:" in text else text
-
+                
+                # Debug the score extraction
+                print(f"Final extracted score: {score}")
+                
                 analysis_result = {
                     "score": score,
                     "explanation": explanation
                 }
                 
                 # Add engagement comparison to the result
-                if engagement_comparison:
-                    analysis_result['engagement_comparison'] = engagement_comparison
+                if 'engagement_comparison' in extracted_data:
+                    analysis_result['engagement_comparison'] = extracted_data['engagement_comparison']
+                
+                # Add follower range comparison to the result if available
+                if 'follower_range_comparison' in extracted_data:
+                    analysis_result['follower_range_comparison'] = extracted_data['follower_range_comparison']
                 
                 # Add tweet metrics to the result
                 analysis_result['retweet_count'] = extracted_data.get('retweet_count', 0)
@@ -649,6 +964,7 @@ class Scraper:
                 analysis_result['reply_count'] = extracted_data.get('reply_count', 0)
                 analysis_result['quote_count'] = extracted_data.get('quote_count', 0)
                 analysis_result['view_count'] = extracted_data.get('view_count', 0)
+                analysis_result['followers'] = extracted_data.get('followers', 0)
                 
                 print(f"Final analysis result with metrics: {analysis_result}")
                 print(f"View count in analysis result: {analysis_result.get('view_count', 'NOT FOUND')}")
@@ -803,6 +1119,23 @@ class Scraper:
             # Process each tweet
             for tweet in timeline_data:
                 if 'legacy' in tweet:
+                    # Check if this tweet has user feedback indicating it's incorrect
+                    # or if it has a high botting score (over 60%)
+                    tweet_id = tweet.get('id_str', '') or tweet.get('id', '')
+                    if tweet_id:
+                        from firebase_config import get_post_data
+                        post_data = get_post_data(tweet_id)
+                        
+                        # Skip this tweet if it has thumbs down feedback or a high botting score
+                        if post_data:
+                            if post_data.get('score', 0) > 60:
+                                print(f"Skipping tweet {tweet_id} with high botting score ({post_data.get('score')}) from average calculation")
+                                continue
+                                
+                            if post_data.get('user_feedback', {}).get('thumbs_down', False):
+                                print(f"Skipping tweet {tweet_id} with thumbs down feedback from average calculation")
+                                continue
+                    
                     total_tweets += 1
                     total_retweets += safe_int(tweet['legacy'].get('retweet_count', 0))
                     total_likes += safe_int(tweet['legacy'].get('favorite_count', 0))
@@ -822,11 +1155,8 @@ class Scraper:
                                 tweet_views = safe_int(tweet['ext']['viewCount']['r']['ok'].get('viewCount', 0))
                         elif isinstance(tweet['ext']['viewCount'], (int, str)):
                             tweet_views = safe_int(tweet['ext']['viewCount'])
-                    elif 'ext_views' in tweet['legacy']:
-                        if isinstance(tweet['legacy']['ext_views'], dict) and 'count' in tweet['legacy']['ext_views']:
-                            tweet_views = safe_int(tweet['legacy']['ext_views'].get('count', 0))
-                        elif isinstance(tweet['legacy']['ext_views'], (int, str)):
-                            tweet_views = safe_int(tweet['legacy']['ext_views'])
+                        elif isinstance(tweet['ext']['viewCount'], (int, str)):
+                            tweet_views = safe_int(tweet['ext']['viewCount'])
                     
                     total_views += tweet_views
             
@@ -850,3 +1180,22 @@ class Scraper:
             import traceback
             traceback.print_exc()
             return {}
+
+    def _sanitize_json_data(self, data):
+        """
+        Sanitize the extracted data before sending it to the OpenAI API
+        Replaces special float values (Infinity, -Infinity, NaN) with JSON-serializable values
+        """
+        if isinstance(data, dict):
+            return {k: self._sanitize_json_data(v) for k, v in data.items()}
+        elif isinstance(data, list):
+            return [self._sanitize_json_data(item) for item in data]
+        elif isinstance(data, float):
+            # Handle special float values
+            if math.isinf(data):
+                return 1e9 if data > 0 else -1e9
+            elif math.isnan(data):
+                return 0
+            return data
+        else:
+            return data

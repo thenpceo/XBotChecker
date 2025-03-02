@@ -1,33 +1,108 @@
-# 💧 Bottled Water
+# 💧 X Bot Checker
 
-Scrape Twitter profiles and tweets to analyze them for the presence of botted engagement and activity.
+Analyze X (formerly Twitter) posts to detect botted engagement and activity.
 
-```ml
-bottled-water
-├─ scraper — "Playwright-based Twitter scraper"
-├─ cache — "Local caching system for scraped data and analysis results"
-├─ config — "Configuration for resource blocking and other settings"
-├─ api — "HTTP based entry point for running the analysis"
-└─ main — "Entry point for running the analysis"
+## Overview
+
+This application allows you to analyze X posts for signs of bot activity. It provides a score and detailed explanation based on engagement metrics and comparison with similar accounts.
+
+## Setup
+
+1. Clone the repository
+2. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+3. Set up environment variables:
+   - Copy `example.env` to `.env`
+   - Add your OpenAI API key to the `.env` file
+
+## Firebase Setup
+
+This application uses Firebase Firestore to store X post data. To set up Firebase:
+
+1. Create a Firebase project at [https://console.firebase.google.com/](https://console.firebase.google.com/)
+2. Generate a service account key:
+   - Go to Project Settings > Service Accounts
+   - Click "Generate new private key"
+   - Save the JSON file as `firebase-key.json` in the root directory of the project
+3. The Firebase configuration is already set up in `firebase_config.py`
+
+## Running the Application
+
+### Development
+
+```
+python api.py
 ```
 
-The developer experience pattern is as follows:
+This will start a Flask development server at http://localhost:5000
 
-```ml
-bottled-water
-├─ install - "pip install -r requirements.txt"
-├─ configuration - "Create a .env file with the following contents: ANTHROPIC_API_KEY="
-├─ run - "python main.py"
-├─ development - "Development API using Flask: python api.py"
-├─ production - "Production API using Gunicorn: gunicorn --config config.py api:api"
-└─ call - "Submit a GET request to the endpoint: http://localhost:8080/?id={ID}&analyze=true"
+### Production
+
+```
+gunicorn --config config.py api:api
 ```
 
-An example execution of the scripts will result in:
+## Project Structure
 
+```
+x-bot-checker/
+├─ api.py - Main Flask application
+├─ scraper.py - X scraper using Playwright
+├─ firebase_config.py - Firebase database configuration
+├─ config.py - Application configuration
+├─ index.py - Vercel deployment entry point
+├─ vercel_scraper.py - Simplified scraper for Vercel
+├─ templates/ - HTML templates
+│  ├─ new_x_template.html - Main UI template
+│  ├─ index.html - Alternative UI template
+│  ├─ posts.html - Admin view of analyzed posts
+│  ├─ login.html - Admin login page
+├─ static/ - Static assets
+├─ cache/ - Local cache for scraped data
+├─ .env - Environment variables
+├─ requirements.txt - Python dependencies
+```
+
+## API Usage
+
+Submit a GET request to analyze a post:
+```
+http://localhost:5000/?id={POST_ID}&analyze=true
+```
+
+Example response:
 ```json
 {
-  "score": 10,
-  "explanation": "These metrics do not strongly suggest botting activity. Here's why:\n\n1. The engagement ratios (likes, replies, retweets, quotes) seem organic and relatively low compared to the user's follower count. Botted accounts often have inflated engagement numbers.\n\n2. The follower to following ratio (4213:235) is reasonable and doesn't indicate artificial inflation of followers.\n\n3. The tweet count (5562) is substantial and suggests a long-term, active account rather than a newly created bot account.\n\n4. The username and screen name appear genuine and personalized, not randomly generated as many bot accounts are.\n\n5. While the account isn't verified, this alone doesn't indicate botting.\n\n6. The engagement on this particular tweet (15 likes, 4 replies) is modest and realistic for an account of this size.\n\nOverall, these metrics appear to reflect natural, organic activity rather than botted behavior. The low score of 10/100 accounts for the small possibility that some subtle botting could be occurring, but there are no clear red flags in the provided data."
+  "score": 75,
+  "explanation": "This post shows signs of potential bot activity based on the engagement patterns...",
+  "retweet_count": 1200,
+  "favorite_count": 3500,
+  "reply_count": 450,
+  "view_count": 25000,
+  "followers": 5000,
+  "engagement_comparison": {
+    "avg_engagement": {
+      "avg_retweets": 800,
+      "avg_likes": 2500,
+      "avg_replies": 300,
+      "avg_views": 15000
+    }
+  },
+  "follower_range_comparison": {
+    "follower_range": {
+      "min": 2000,
+      "max": 6000,
+      "id": "2k_to_6k"
+    },
+    "avg_metrics": {
+      "avg_retweets": 600,
+      "avg_likes": 2000,
+      "avg_replies": 250,
+      "avg_views": 12000,
+      "post_count": 150
+    }
+  }
 }
 ```
