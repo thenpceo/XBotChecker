@@ -132,7 +132,7 @@ class Scraper:
         page.goto(url)
         
         # Wait for selector with a longer timeout
-        page.wait_for_selector(selector, timeout=30000)
+        page.wait_for_selector(selector, timeout=60000)
         
         # Add a small delay to ensure all XHR requests complete
         time.sleep(random.uniform(2, 4))
@@ -178,7 +178,7 @@ class Scraper:
                     page.goto(scrape_url)
                     
                     # Wait for tweet to load with a longer timeout
-                    page.wait_for_selector('[data-testid="tweet"]', timeout=30000)
+                    page.wait_for_selector('[data-testid="tweet"]', timeout=60000)
                     
                     # Add a small delay to ensure all XHR requests complete
                     time.sleep(random.uniform(2, 4))
@@ -260,7 +260,7 @@ class Scraper:
                     page.goto(scrape_url)
                     
                     # Wait for profile to load with a longer timeout
-                    page.wait_for_selector('[data-testid="primaryColumn"]', timeout=30000)
+                    page.wait_for_selector('[data-testid="primaryColumn"]', timeout=60000)
                     
                     # Add a small delay to ensure all XHR requests complete
                     time.sleep(random.uniform(2, 4))
@@ -1021,7 +1021,7 @@ class Scraper:
                     
                     # Wait for tweets to load with a longer timeout
                     print(f"Waiting for timeline to load")
-                    page.wait_for_selector('[data-testid="tweet"]', timeout=30000)
+                    page.wait_for_selector('[data-testid="tweet"]', timeout=60000)
                     
                     # Add a small delay to ensure all XHR requests complete
                     time.sleep(random.uniform(2, 4))
