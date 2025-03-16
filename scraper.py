@@ -111,7 +111,7 @@ class Scraper:
     ):
         """Get the selector from the page using Playwright"""
         # Use non-headless mode to show the browser window
-        browser = pw.chromium.launch(headless=False)
+        browser = pw.chromium.launch(headless=True)
         
         # Create a context with more realistic browser settings
         context = browser.new_context(
@@ -157,7 +157,7 @@ class Scraper:
                 try:
                     print(f"Waiting for tweet selector")
                     # Use non-headless mode to show the browser window
-                    browser = pw.chromium.launch(headless=False)
+                    browser = pw.chromium.launch(headless=True)
                     
                     # Create a context with more realistic browser settings
                     context = browser.new_context(
@@ -239,7 +239,7 @@ class Scraper:
             with sync_playwright() as pw:
                 try:
                     # Use non-headless mode to show the browser window
-                    browser = pw.chromium.launch(headless=False)
+                    browser = pw.chromium.launch(headless=True)
                     
                     # Create a context with more realistic browser settings
                     context = browser.new_context(
@@ -999,7 +999,7 @@ class Scraper:
             with sync_playwright() as pw:
                 try:
                     # Use non-headless mode to show the browser window
-                    browser = pw.chromium.launch(headless=False)
+                    browser = pw.chromium.launch(headless=True)
                     
                     # Create a context with more realistic browser settings
                     context = browser.new_context(
